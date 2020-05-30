@@ -16,8 +16,11 @@ from dset_loaders.prepare_dataset import prepare_dataset
 from utils.train import train
 from utils.parse_tasks import parse_tasks
 from utils.SSHead import extractor_from_layer3
+from utils.SSHead_Le import extractor_from_layer3_Le
 from utils.plot_all_epoch_stats import plot_all_epoch_stats
 from utils.misc import *
+
+from models.Lenet import LeNet
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', required=True)
@@ -40,7 +43,9 @@ parser.add_argument('--lr_flip', default=0.1, type=float)
 parser.add_argument('--depth', default=26, type=int)
 parser.add_argument('--width', default=2, type=int)
 parser.add_argument('--outf', default='output/demo')
-parser.add_argument('--data_root', default='/data/datasets/')
+parser.add_argument('--data_root', default='../data/')
+################################################################
+parser.add_argument('--arch', default='resnet')
 args = parser.parse_args()
 my_makedir(args.outf)
 cudnn.benchmark = True
@@ -56,8 +61,14 @@ else:
     classes = 10
 
 print('==> Building model..')
-net = ResNet(args.depth, args.width, classes=classes, channels=channels).cuda()
-ext = extractor_from_layer3(net)
+if args.arch == 'resnet':
+    net = ResNet(args.depth, args.width, classes=classes, channels=channels).cuda()
+    ext = extractor_from_layer3(net)
+else:
+    net = LeNet().cuda()
+    ext = extractor_from_layer3_Le(net)
+    print(net)
+    print(ext)
 
 print('==> Preparing datasets..')
 sc_tr_dataset, sc_te_dataset = prepare_dataset(args.source, image_size, channels, path=args.data_root)
@@ -86,5 +97,5 @@ for epoch in range(1, args.nepoch+1):
     epoch_stats = train(args, net, ext, sstasks, 
         criterion, optimizer, scheduler, sc_tr_loader, sc_te_loader, tg_te_loader)
     all_epoch_stats.append(epoch_stats)
-    torch.save(all_epoch_stats, args.outf + '/loss.pth')
+    torch.save(all_epoch_stats, args.outf + '/loss_{}_{}.pth'.format(args.arch, str(args.width)))
     plot_all_epoch_stats(all_epoch_stats, args.outf)

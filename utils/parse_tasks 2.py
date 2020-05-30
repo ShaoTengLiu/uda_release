@@ -6,7 +6,6 @@ import torch.utils.data as torchdata
 from utils.train import test
 from utils.SSTask import SSTask
 from utils.SSHead import linear_on_layer3
-from utils.SSHead_Le import linear_on_layer3_Le
 from dset_classes.DsetNoLabel import DsetNoLabel
 
 def parse_tasks(args, ext, sc_tr_dataset, sc_te_dataset, tg_tr_dataset, tg_te_dataset):
@@ -31,10 +30,7 @@ def parse_tasks(args, ext, sc_tr_dataset, sc_te_dataset, tg_tr_dataset, tg_te_da
         tu_tr_loader = torchdata.DataLoader(tu_tr_dataset, batch_size=args.batch_size//2, shuffle=True, num_workers=4)
         tu_te_loader = torchdata.DataLoader(tu_te_dataset, batch_size=args.batch_size//2, shuffle=False, num_workers=4)
 
-        if args.arch == 'resnet':
-            head = linear_on_layer3(4, args.width, 8).cuda()
-        elif args.arch == 'lenet':
-            head = linear_on_layer3_Le(4).cuda()
+        head = linear_on_layer3(4, args.width, 8).cuda()
         criterion = nn.CrossEntropyLoss().cuda()
         optimizer = optim.SGD(list(ext.parameters()) + list(head.parameters()), 
                                 lr=args.lr_rotation, momentum=0.9, weight_decay=5e-4)
